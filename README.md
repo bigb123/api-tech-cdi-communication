@@ -26,6 +26,13 @@ pip install -r requirements.txt
 python cdi_monitor.py <port-name>
 ```
 
+Where `port-name` is:
+
+- in Windows: usually COM0 to COM40
+  - Check available devices with a Device Manager program
+- MacOS: in my case it is /dev/tty.usbserial-1420
+  - List available devices with `ls /dev/` command
+
 
 # 🔌 Communication details
 
@@ -39,9 +46,9 @@ python cdi_monitor.py <port-name>
 
 The CDI module expects a 4-byte handshake:
 1. `0x01` - Wake-up/initialization byte
-2. `0xAB` - Handshake byte (sent after 1ms delay)
-3. `0xAC` - Status request (sent after 1ms delay)
-4. `0xA1` - Ready command (sent after 1ms delay)
+1. `0xAB` - Handshake byte
+1. `0xAC` - Status request
+1. `0xA1` - Ready command
 
 
 ## Packet Format (22 bytes)
