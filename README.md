@@ -19,10 +19,6 @@ Install Python dependencies:
 pip install -r requirements.txt
 ```
 
-Or install pyserial directly:
-```bash
-pip install pyserial
-```
 
 ## 🚀 Execution
 

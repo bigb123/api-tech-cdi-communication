@@ -5,7 +5,7 @@ Shows RPM, Battery Voltage, and Ignition Timing
 """
 
 import serial
-import time
+from time import sleep
 import struct
 from datetime import datetime
 import sys
@@ -32,16 +32,17 @@ def connect_to_cdi(port_name='COM5'):
   
   print("Port opened, sending initialization...")
   
-  # Send initialization sequence twice (CDI requires this)
+  # Initialization message
   init_bytes = [0x01, 0xAB, 0xAC, 0xA1]
   
+  # Send initialization sequence twice (CDI requires this)
   for round in [1, 2]:
     print(f" Sending init #{round}...", end="")
     for byte in init_bytes:
       port.write(bytes([byte]))
     
     # Wait for response
-    time.sleep(0.1)
+    sleep(0.1)
     
     # Check if CDI responded
     if port.in_waiting > 0:
@@ -75,15 +76,68 @@ def decode_cdi_packet(data):
   status = data[8]
   
   # Extract Timing (byte 9)
-  # The scaling depends on the status mode
   timing_byte = data[9]
 
   return {
     'rpm': rpm,
     'battery': battery_voltage,
-    'timing byte': timing_byte,
-    'status_byte': status
+    'status_byte': status,
+    'timing byte': timing_byte
   }
+
+def connect_and_read_data(port_name):
+
+  try:
+    # Connect to CDI
+    port = connect_to_cdi(port_name)
+    print("\n✓ Connected! Starting monitor...\n")
+    
+    pretty_header()
+    
+    while True:
+      # Send request for data
+      request = [0x01, 0xAB, 0xAC, 0xA1]
+      for byte in request:
+        port.write(bytes([byte]))
+      
+      # Wait a bit
+      sleep(0.1)
+      
+      # Read response if available
+      if port.in_waiting >= 22: # CDI sends 22-byte packets
+        data = port.read(22)
+        
+        # Decode the packet
+        decoded = decode_cdi_packet(data)
+        pretty_print(decoded)
+      
+      # Wait before next request
+      sleep(0.1)
+      
+  except KeyboardInterrupt:
+    print("\n\nStopped by user")
+    return 1
+
+  except serial.SerialException as e:
+    print(f"\nConnection lost, retrying. Error message:\n{e}")
+    sleep(1)
+
+  except Exception as e:
+    print(f"\nError: {e}")
+    sleep(1)
+    
+  finally:
+    # Close the port
+    if 'port' in locals():
+      port.close()
+      print("Port closed")
+
+
+###
+#
+# MAIN
+#
+###
 
 def main(port_name='COM5'):
   """Main program
@@ -100,47 +154,25 @@ def main(port_name='COM5'):
   print("  • Ignition Timing")
   print("\nPress Ctrl+C to stop\n")
   
-  try:
-    # Connect to CDI
-    port = connect_to_cdi(port_name)
-    print("\n✓ Connected! Starting monitor...\n")
-    
-    # Print header for the data
-    print("Time     | RPM  | Battery | Timing byte | status byte ")
-    print("-" * 70)
-    
-    # Main loop - keep reading data
-    while True:
-      # Send request for data
-      request = [0x01, 0xAB, 0xAC, 0xA1]
-      for byte in request:
-        port.write(bytes([byte]))
-      
-      # Wait a bit
-      time.sleep(0.1)
-      
-      # Read response if available
-      if port.in_waiting >= 22: # CDI sends 22-byte packets
-        data = port.read(22)
-        
-        # Decode the packet
-        decoded = decode_cdi_packet(data)
-        pretty_print(decoded)
-      
-      # Wait before next request
-      time.sleep(0.9) # Total 1 second between requests
-      
-  except KeyboardInterrupt:
-    print("\n\nStopped by user")
-    
-  except Exception as e:
-    print(f"\nError: {e}")
-    
-  finally:
-    # Close the port
-    if 'port' in locals():
-      port.close()
-      print("Port closed")
+  while True:
+    try:
+      # In case user stops the program in the read loop of a connect_and_read_data function - let's just break the loop here as well and finish operation.
+      if (connect_and_read_data(port_name)):
+        break
+    except serial.SerialException as e:
+      print(f"\nConnection lost, retrying (main loop). Error message:\n{e}")
+      sleep(1)
+    # This exception happens when tuner usb cable isn't connected and user cancels the program.
+    except KeyboardInterrupt:
+      print("\n\nStopped by user (main loop)")
+      break
+
+
+###
+#
+# Testing
+#
+###
 
 def test():
   """
@@ -157,13 +189,24 @@ def test():
     "0302c000000000730d9c0008000a020103020201fea9"
   ]
   
-  # Print header for the test data
-  print("Time     | RPM  | Battery | Timing byte | status byte ")
-  print("-" * 70)
+  pretty_header()
   
   for a in test_data:
     decoded = decode_cdi_packet(bytes.fromhex(a))
     pretty_print(decoded)
+
+
+###
+#
+# Print functions
+#
+###
+
+def pretty_header():
+    # Print header for the data
+    print("Time     | RPM  | Battery | Timing byte | status byte ")
+    print("-" * 70)
+
 
 def pretty_print(data):
   """
@@ -190,6 +233,13 @@ def pretty_print(data):
   
   # Print the formatted row
   print(f"{timestamp} | {rpm_str} | {battery_str:^7} | {timing_str:^11} | {status_str:^11}")
+
+
+###
+#
+# start sequence
+#
+###
 
 if __name__ == "__main__":
   # Set up command-line argument parser
