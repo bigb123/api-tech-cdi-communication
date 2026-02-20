@@ -204,7 +204,7 @@ def test():
 
 def pretty_header():
     # Print header for the data
-    print("Time     | RPM  | Battery | Timing byte | status byte ")
+    print("Time     | RPM  | Battery | Status byte | Timing byte")
     print("-" * 70)
 
 
@@ -232,7 +232,7 @@ def pretty_print(data):
   status_str = f"0x{data['status_byte']:02X} ({data['status_byte']:3d})"  # Hex and decimal
   
   # Print the formatted row
-  print(f"{timestamp} | {rpm_str} | {battery_str:^7} | {timing_str:^11} | {status_str:^11}")
+  print(f"{timestamp} | {rpm_str} | {battery_str:^7} | {status_str:^11}") | {timing_str:^11}
 
 
 ###
