@@ -102,6 +102,10 @@ Byte 21:     0xA9        - End marker
   - Battery: 11.8V 
   - RPM: 1216 
 
+# What's missing
+
+- Ignition timing display at given RPMs at given time
+
 # 👷 How the script was built?
 
 The script is based on reverse engineering of a COM port sniffing during communication of an official API Tech tuner product with CDI device.
@@ -111,3 +115,10 @@ The script is based on reverse engineering of a COM port sniffing during communi
 The `ignition map from tuner program.cfg` file consists of an ignition map configuration visible on the screenshot above.
 
 You can download the Tuner program visible on the screenshot above from [official API tech download page](https://apitechth.com/download-program/). Look for 'OLD CDI and NEW CDi' package.
+
+## Disclosure
+
+The program was written with a significant help of Claude Opus 4. AI did:
+
+- hex bytes decoding
+- most of Python script writing
