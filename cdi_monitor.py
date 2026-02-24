@@ -11,6 +11,9 @@ from datetime import datetime
 import sys
 import argparse
 
+# message that we have to send every time to receive a response from a CDI
+MESSAGE_TO_CDI = [0x01, 0xAB, 0xAC, 0xA1]
+
 def connect_to_cdi(port_name='COM5'):
   """Connect to the CDI module
   
@@ -32,13 +35,10 @@ def connect_to_cdi(port_name='COM5'):
   
   print("Port opened, sending initialization...")
   
-  # Initialization message
-  init_bytes = [0x01, 0xAB, 0xAC, 0xA1]
-  
   # Send initialization sequence twice (CDI requires this)
   for round in [1, 2]:
     print(f" Sending init #{round}...", end="")
-    for byte in init_bytes:
+    for byte in MESSAGE_TO_CDI:
       port.write(bytes([byte]))
     
     # Wait for response
@@ -95,9 +95,7 @@ def connect_and_read_data(port_name):
     pretty_header()
     
     while True:
-      # Send request for data
-      request = [0x01, 0xAB, 0xAC, 0xA1]
-      for byte in request:
+      for byte in MESSAGE_TO_CDI:
         port.write(bytes([byte]))
       
       # Wait a bit
