@@ -1,7 +1,7 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 Continuously reads and displays CDI data with decoding
-Shows RPM, Battery Voltage, and Ignition Timing
+Shows RPM, CDI Voltage, and Ignition Timing
 """
 
 import serial
@@ -55,7 +55,7 @@ def connect_to_cdi(port_name='COM5'):
 
 def decode_cdi_packet(data):
   """
-  Decode CDI packet to get RPM, Battery, and Timing
+  Decode CDI packet to get RPM, CDI voltage, and Timing
   This is a simplified decoder for beginners
   """
   # Check if packet is valid (starts with 0x03, ends with 0xA9)
@@ -66,10 +66,10 @@ def decode_cdi_packet(data):
   # Big-endian means most significant byte first
   rpm = (data[1] << 8) | data[2]  # Combine two bytes into one number
   
-  # Extract Battery Voltage (byte 7)
+  # Extract CDI Voltage (byte 7)
   # Stored as decivolts (e.g., 115 = 11.5V)
-  battery_decivolts = data[7]
-  battery_voltage = battery_decivolts / 10.0
+  cdi_voltage_decivolts = data[7]
+  cdi_voltage = cdi_voltage_decivolts / 10.0
   
   # Extract Status Mode (byte 8)
   # This tells us how to interpret the timing
@@ -80,7 +80,7 @@ def decode_cdi_packet(data):
 
   return {
     'rpm': rpm,
-    'battery': battery_voltage,
+    'cdi_voltage': cdi_voltage,
     'status_byte': status,
     'timing byte': timing_byte
   }
@@ -106,8 +106,10 @@ def connect_and_read_data(port_name):
         data = port.read(22)
         
         # Decode the packet
-        decoded = decode_cdi_packet(data)
-        pretty_print(decoded)
+        # decoded = decode_cdi_packet(data)
+        # pretty_print(decoded)
+        pretty_print(data)
+        
       
       # Wait before next request
       sleep(0.1)
@@ -144,11 +146,11 @@ def main(port_name='COM5'):
     port_name: Serial port name to connect to
   """
   print("="*70)
-  print("CDI Monitor with Decoding - Simple Version")
+  print("CDI Monitor with Decoding")
   print("="*70)
   print("\nThis program reads data from your CDI and shows:")
   print("  • Engine RPM")
-  print("  • Battery Voltage")
+  print("  • CDI Voltage")
   print("  • Ignition Timing")
   print("\nPress Ctrl+C to stop\n")
   
@@ -190,8 +192,10 @@ def test():
   pretty_header()
   
   for a in test_data:
-    decoded = decode_cdi_packet(bytes.fromhex(a))
-    pretty_print(decoded)
+    # decoded = decode_cdi_packet()
+    # pretty_print(decoded)
+
+    pretty_print(bytes.fromhex(a))
 
 
 ###
@@ -200,37 +204,53 @@ def test():
 #
 ###
 
+def format_hex(data, highlight=None):
+  """Format bytes as hex with optional highlighted indices (shown in red).
+  
+  Args:
+    data: bytes object
+    highlight: set of byte indices to highlight in red (e.g., {8, 9})
+  """
+  parts = []
+  for i, b in enumerate(data):
+    hex_str = f'{b:02x}'
+    if highlight and i in highlight:
+      hex_str = f'\033[91m{hex_str}\033[0m'  # red text
+    parts.append(hex_str)
+  return ' '.join(parts)
+
+
 def pretty_header():
     # Print header for the data
-    print("Time     | RPM  | Battery | Status byte | Timing byte")
+    print("Time     | RPM  | CDI volt | Status byte | Timing byte | Raw message")
     print("-" * 70)
 
 
-def pretty_print(data):
+def pretty_print(bytes):
   """
-  Pretty print CDI data in a formatted table row
+  Pretty print CDI message in a formatted table row
   
   Args:
-    data: Dictionary with keys 'rpm', 'battery', 'timing byte', 'status_byte'
-          or None if packet was invalid
+    bytes: Raw bytes - a message received from a CDI. It will be decoded to a dictionary with keys 'rpm', 'cdi_voltage', 'timing byte', 'status_byte' or None if packet was invalid
   """
-  if data is None:
+  decoded_message = decode_cdi_packet(bytes)
+  if decoded_message is None:
     # Invalid packet - print error row
     timestamp = datetime.now().strftime("%H:%M:%S")
-    print(f"{timestamp} | {'---':^4} | {'---':^7} | {'---':^11} | {'---':^11}")
+    print(f"{timestamp} | {'---':^4} | {'---':^8} | {'---':^11} | {'---':^11} | {'---':^11}")
     return
   
   # Get current time
   timestamp = datetime.now().strftime("%H:%M:%S")
   
   # Format each field with proper width and alignment
-  rpm_str = f"{data['rpm']:4d}"  # 4 digits, right aligned
-  battery_str = f"{data['battery']:5.1f}V"  # 5 chars total with 1 decimal
-  timing_str = f"0x{data['timing byte']:02X} ({data['timing byte']:3d})"  # Hex and decimal
-  status_str = f"0x{data['status_byte']:02X} ({data['status_byte']:3d})"  # Hex and decimal
+  rpm_str = f"{decoded_message['rpm']:4d}"  # 4 digits, right aligned
+  cdi_voltage_str = f"{decoded_message['cdi_voltage']:5.1f}V"  # 5 chars total with 1 decimal
+  timing_str = f"0x{decoded_message['timing byte']:02X} ({decoded_message['timing byte']:3d})"  # Hex and decimal
+  status_str = f"0x{decoded_message['status_byte']:02X} ({decoded_message['status_byte']:3d})"  # Hex and decimal
   
-  # Print the formatted row
-  print(f"{timestamp} | {rpm_str} | {battery_str:^7} | {status_str:^11} | {timing_str:^11}")
+  # Print the formatted row with bytes 8 and 9 highlighted in red
+  print(f"{timestamp} | {rpm_str} | {cdi_voltage_str:^8} | {status_str:^11} | {timing_str:^11} | {format_hex(bytes, highlight={8, 9})}")
 
 
 ###
