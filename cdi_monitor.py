@@ -71,18 +71,13 @@ def decode_cdi_packet(data):
   cdi_voltage_decivolts = data[7]
   cdi_voltage = cdi_voltage_decivolts / 10.0
   
-  # Extract Status Mode (byte 8)
-  # This tells us how to interpret the timing
-  status = data[8]
   
-  # Extract Timing (byte 9)
-  timing_byte = data[9]
+  timing_angle = data[13] / 2
 
   return {
     'rpm': rpm,
     'cdi_voltage': cdi_voltage,
-    'status_byte': status,
-    'timing byte': timing_byte
+    'timing byte': timing_angle
   }
 
 def connect_and_read_data(port_name):
@@ -105,9 +100,6 @@ def connect_and_read_data(port_name):
       if port.in_waiting >= 22: # CDI sends 22-byte packets
         data = port.read(22)
         
-        # Decode the packet
-        # decoded = decode_cdi_packet(data)
-        # pretty_print(decoded)
         pretty_print(data)
         
       
@@ -222,7 +214,7 @@ def format_hex(data, highlight=None):
 
 def pretty_header():
     # Print header for the data
-    print("Time     | RPM  | CDI volt | Status byte | Timing byte | Raw message")
+    print("Time     | RPM  | CDI volt | Timing | Raw message")
     print("-" * 70)
 
 
@@ -237,7 +229,7 @@ def pretty_print(bytes):
   if decoded_message is None:
     # Invalid packet - print error row
     timestamp = datetime.now().strftime("%H:%M:%S")
-    print(f"{timestamp} | {'---':^4} | {'---':^8} | {'---':^11} | {'---':^11} | {'---':^11}")
+    print(f"{timestamp} | {'---':^4} | {'---':^8} | {'---':^6} | {'---':^11}")
     return
   
   # Get current time
@@ -246,11 +238,10 @@ def pretty_print(bytes):
   # Format each field with proper width and alignment
   rpm_str = f"{decoded_message['rpm']:4d}"  # 4 digits, right aligned
   cdi_voltage_str = f"{decoded_message['cdi_voltage']:5.1f}V"  # 5 chars total with 1 decimal
-  timing_str = f"0x{decoded_message['timing byte']:02X} ({decoded_message['timing byte']:3d})"  # Hex and decimal
-  status_str = f"0x{decoded_message['status_byte']:02X} ({decoded_message['status_byte']:3d})"  # Hex and decimal
+  timing_angle = f"{decoded_message['timing byte']:2.1f}" # Timing in degrees
   
   # Print the formatted row with bytes 8 and 9 highlighted in red
-  print(f"{timestamp} | {rpm_str} | {cdi_voltage_str:^8} | {status_str:^11} | {timing_str:^11} | {format_hex(bytes, highlight={8, 9})}")
+  print(f"{timestamp} | {rpm_str} | {cdi_voltage_str:^8} | {timing_angle:^6} | {format_hex(bytes, highlight={8, 9})}")
 
 
 ###
