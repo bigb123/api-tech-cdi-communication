@@ -56,11 +56,15 @@ The CDI module expects a 4-byte handshake:
 ```
 Byte 0:      0x03        - Packet header/type identifier
 Bytes 1-2:   RPM         - Engine RPM (16-bit big-endian)
-Bytes 3-4:   0x00 0x00   - Reserved/unused
-Bytes 5-6:   0x00 0x00   - Reserved/unused  
-Byte 7:      Battery     - Battery voltage in decivolts (11.5V = 115 = 0x73)
-Byte 8-9:    Status      - Can be an ignition timing
-Bytes 10-19: Various     - Additional status/config data
+Bytes 3-6:   0x00        - Reserved/unused
+Byte 7:      CDI voltage - CDI voltage in decivolts (11.5V = 115 = 0x73)
+Byte 8:      unknown     - Decreases with RPM 
+Byte 9:      unknown     - Varies significantly
+Byte 10:     zero        - always zero
+Byte 11:     unknown     
+Byte 12:     zero
+Byte 13:     Ignition    - Base ignition angle x 2
+Bytes 14-19: Various     - Additional status/config data
 Byte 20:     Checksum    - Packet checksum
 Byte 21:     0xA9        - End marker
 ```
@@ -84,27 +88,6 @@ Byte 21:     0xA9        - End marker
   - `0x05 0xC0` = 1472 RPM
   - `0x04 0xC0` = 1216 RPM
 
-## Test Case 1: Engine Off
-- **Packet:** `03 00 00 00 00 00 00 74 10 04 00 08 00 0A 02 01 03 02 02 01 A8 A9`
-- **Decoded:**
-  - Battery: 11.6V 
-  - RPM: 0 
-
-## Test Case 2: 2880 RPM
-- **Packet:** `03 0B 40 00 00 00 00 7E 08 59 00 08 00 1D 02 01 03 02 02 01 5D A9`
-- **Decoded:**
-  - Battery: 12.6V 
-  - RPM: 2880 
-
-## Test Case 3: 1216 RPM
-- **Packet:** `03 04 C0 00 00 00 00 76 0D A2 00 08 00 10 02 01 03 02 02 01 0F A9`
-- **Decoded:**
-  - Battery: 11.8V 
-  - RPM: 1216 
-
-# What's missing
-
-- Ignition timing display at given RPMs at given time
 
 # 👷 How the script was built?
 
