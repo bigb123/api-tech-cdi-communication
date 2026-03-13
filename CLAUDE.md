@@ -38,3 +38,9 @@ Byte 21:     0xA9        - End marker
 ```
 
 Check README.md for more details.
+
+## Reading ignition map
+
+There are 16 points we can use for ignition. First is at 1000 RPMs and last is at 16000. All other are flexible.
+
+Ignition map is being received in number of 64 bytes chunks that we have to read and put together. First 4 bytes is a header and last 2 bytes are a message end. We end up with 58 bytes of usable data. First 32 bytes are RPM values and next 32 bytes are ignition angle degreees. A single information takes 2 bytes and it is in Little Endian. However, since first message holds only 58 bytes of information we end up with 32 bytes of RPM data and only 26 bytes of timing angle information. We have to read the missing 6 bytes from a next message. That's why we have to read 2 messages to get a full picture.
