@@ -32,25 +32,7 @@ def connect_to_cdi(port_name='COM5'):
   # IMPORTANT: Set DTR and RTS high (required for CDI)
   port.dtr = True
   port.rts = True
-  
-  print("Port opened, sending initialization...")
-  
-  # Send initialization sequence twice (CDI requires this)
-  for round in [1, 2]:
-    print(f" Sending init #{round}...", end="")
-    for byte in MESSAGE_TO_CDI:
-      port.write(bytes([byte]))
-    
-    # Wait for response
-    sleep(0.1)
-    
-    # Check if CDI responded
-    if port.in_waiting > 0:
-      response = port.read(port.in_waiting)
-      print(f" Got response: {len(response)} bytes")
-    else:
-      print(" No response")
-  
+
   return port
 
 def decode_cdi_packet(data):
@@ -85,7 +67,7 @@ def connect_and_read_data(port_name):
   try:
     # Connect to CDI
     port = connect_to_cdi(port_name)
-    print("\n✓ Connected! Starting monitor...\n")
+    print("\nStarting monitor...\n")
     
     pretty_header()
     
