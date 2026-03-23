@@ -49,7 +49,7 @@ def make_ack(page_data):
   ack = bytearray(page_data)
   ack[0] = 0x01  # Change response marker to request marker
   ack[62] = ack[62] - 1 # subtract 1. Required for a proper message format
-  ack[63] = 0xB8  # End marker
+  ack[63] = ack[63] - 1  # End marker
   return bytes(ack)
 
 def read_all_CDI_timing_messages(port):
